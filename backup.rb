@@ -44,9 +44,9 @@ class BackupPinterest
   def login!
     puts "Logging in as #{@username} (#{@email})"
     visit PINTEREST + '/login'
-    fill_in 'email', with: @email
+    fill_in 'username_or_email', with: @email
     fill_in 'password', with: @password
-    click_button 'Login'
+    page.find("[type=submit]").click
   end
 
   def get_list_of_boards!
