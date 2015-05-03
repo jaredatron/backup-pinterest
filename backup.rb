@@ -4,7 +4,6 @@
 require 'capybara'
 require 'capybara/dsl'
 require 'pry'
-require 'pp'
 require 'pathname'
 require 'colorize'
 
@@ -27,19 +26,20 @@ class BackupPinterest
     @password = ARGV.shift or usage!
     @root     = Pathname ARGV.shift || File.expand_path('..', __FILE__)
   end
-
+ 
+  def usage!
+    warn "backup username email password [destination]"
+    exit!
+  end
+ 
   def backup!
+    # binding.pry
     login!
     get_list_of_boards!
     get_images!
   end
 
   private
-
-  def usage!
-    warn "backup username email password [destination]"
-    exit!
-  end
 
   def login!
     puts "Logging in as #{@username} (#{@email})"
@@ -50,13 +50,18 @@ class BackupPinterest
   end
 
   def get_list_of_boards!
-    puts "getting list of boards…"
     visit PINTEREST + @username
+    # need to wait for boards loaded
+    sleep 5
+
+    puts "getting list of boards…"
+    
     boards = js <<-JS
-      $('#ColumnContainer > ul > li h3 a').map(function(){
-        return [$(this).text(), $(this).attr('href')]
+      $('.UserBoards .Board > a').map(function(){
+        return [$.trim($(this).find(':first').text()), $(this).attr('href')]
       });
     JS
+
     @boards = Hash[*boards].map{ |name, path| {name: name, path: path} }
 
     puts "found: #{@boards.size} boards"
@@ -66,13 +71,32 @@ class BackupPinterest
     @boards.each do |board|
       print "[#{board[:name]}] ".green + "found "
       visit PINTEREST + board[:path]
-      load_all_content!
-      board[:image_urls] = js <<-JS
-        $('.pin').map(function(){ return $(this).data('closeup-url') });
-      JS
+      sleep 3
+
+      image_urls = get_unique_links!
+
+      # change links to big size images of max width 736px 
+      board[:image_urls] = image_urls.map! {|link| link.gsub('236x', '736x')}
       puts "#{board[:image_urls].size} images"
+
       download_images! board
     end
+  end
+
+  def get_unique_links!
+    image_links = []
+
+      until scrolled_to_bottom?
+        load_all_content!
+
+        image_links_chunk = js <<-JS
+          $('.pinUiImage img').map(function(){ return $(this).attr('src') });
+        JS
+
+        image_links.concat image_links_chunk
+      end
+
+      image_links.uniq
   end
 
   def download_images! board
@@ -81,25 +105,21 @@ class BackupPinterest
     path.mkpath
     return if image_urls.empty?
     command = <<-SH
-      cd #{path.to_s.inspect} && wget --quiet --background #{image_urls}
+      cd #{path.to_s.inspect} && wget -c --background #{image_urls}
     SH
-    # puts command
     system command
   end
 
   def load_all_content!
-    while !scrolled_to_bottom?
       js %(window.scrollTo(0, 9999999))
-      sleep 1
-    end
+      sleep 3
   end
 
   def scrolled_to_bottom?
     js <<-JS
-      $('html').height() - document.body.scrollTop <= $(window).height()
+      $(window).scrollTop() == $(document).height() - $(window).height()
     JS
   end
-
 
   def js *args
     page.evaluate_script *args
