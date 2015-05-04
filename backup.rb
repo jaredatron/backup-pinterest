@@ -33,7 +33,6 @@ class BackupPinterest
   end
  
   def backup!
-    # binding.pry
     login!
     get_list_of_boards!
     get_images!
