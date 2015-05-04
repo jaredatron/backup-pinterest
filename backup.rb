@@ -95,7 +95,7 @@ class BackupPinterest
       image_links.concat image_links_chunk
     end
 
-      image_links.uniq
+    image_links.uniq
   end
 
   def download_images! board
