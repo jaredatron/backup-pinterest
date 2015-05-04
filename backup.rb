@@ -86,15 +86,15 @@ class BackupPinterest
   def get_unique_links!
     image_links = []
 
-      until scrolled_to_bottom?
-        load_all_content!
+    until scrolled_to_bottom?
+      load_all_content!
 
-        image_links_chunk = js <<-JS
-          $('.pinUiImage img').map(function(){ return $(this).attr('src') });
-        JS
+      image_links_chunk = js <<-JS
+        $('.pinUiImage img').map(function(){ return $(this).attr('src') });
+      JS
 
-        image_links.concat image_links_chunk
-      end
+      image_links.concat image_links_chunk
+    end
 
       image_links.uniq
   end
