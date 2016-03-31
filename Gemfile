@@ -1,7 +1,8 @@
 # A sample Gemfile
-source "https://rubygems.org"
+source 'https://rubygems.org'
 
-gem "capybara"
-gem "selenium"
-gem "pry"
-gem "colorize"
+gem 'capybara'
+gem 'selenium'
+gem 'pry-byebug'
+gem 'colored'
+gem 'selenium-webdriver'
